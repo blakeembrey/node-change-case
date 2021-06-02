@@ -5,10 +5,14 @@ export interface Options {
   stripRegexp?: RegExp | RegExp[];
   delimiter?: string;
   transform?: (part: string, index: number, parts: string[]) => string;
+  separateNumbers?: boolean;
 }
 
 // Support camel case ("camelCase" -> "camel Case" and "CAMELCase" -> "CAMEL Case").
 const DEFAULT_SPLIT_REGEXP = [/([a-z0-9])([A-Z])/g, /([A-Z])([A-Z][a-z])/g];
+
+// Regex to split numbers ("13test" -> "13 test")
+const SEPARATE_NUMBERS_SPLIT_REGEXP = [...DEFAULT_SPLIT_REGEXP, /([0-9])([A-Za-z])/g, /([A-Za-z])([0-9])/g];
 
 // Remove all non-word characters.
 const DEFAULT_STRIP_REGEXP = /[^A-Z0-9]+/gi;
@@ -18,11 +22,20 @@ const DEFAULT_STRIP_REGEXP = /[^A-Z0-9]+/gi;
  */
 export function noCase(input: string, options: Options = {}) {
   const {
-    splitRegexp = DEFAULT_SPLIT_REGEXP,
     stripRegexp = DEFAULT_STRIP_REGEXP,
     transform = lowerCase,
     delimiter = " ",
+    separateNumbers,
   } = options;
+  let { splitRegexp } = options;
+
+  /**
+   * If splitRegexp was not passed in options, and seperateNumbers is true,
+   * update DEFAULT_SPLIT_REGEXP with regex to split numbers.
+   */
+  if (!splitRegexp) {
+    splitRegexp = separateNumbers ? SEPARATE_NUMBERS_SPLIT_REGEXP : DEFAULT_SPLIT_REGEXP;
+  }
 
   let result = replace(
     replace(input, splitRegexp, "$1\0$2"),
